@@ -91,22 +91,7 @@ class MyCompGCN(nn.Module):
             self.bn1 = torch.nn.BatchNorm2d(200)
             self.bn2 = torch.nn.BatchNorm1d(200)
             self.fc = torch.nn.Linear(39200, self.args.out_dim)
-        elif self.args.decoder_model.lower() == 'dualattne':
-            self.layer_norm_ent = nn.LayerNorm(self.args.emb_dim*2, eps=1e-8)
-            self.layer_norm_rel = nn.LayerNorm(self.args.emb_dim*2, eps=1e-8)
-            self.attn_ent = nn.MultiheadAttention(embed_dim=self.args.emb_dim*2, \
-                                                  num_heads=self.args.nheads, \
-                                                  batch_first=True, \
-                                                  dropout=self.args.inp_drop)
-            self.attn_rel = nn.MultiheadAttention(embed_dim=self.args.emb_dim*2, \
-                                                 num_heads=self.args.nheads, \
-                                                 batch_first=True, \
-                                                 dropout=self.args.inp_drop)
-            self.hid_drop = nn.Dropout(self.args.hid_drop)
-            self.ffn_output = nn.Sequential(nn.Linear(self.args.emb_dim*2 * 3, self.args.dim_feedforward),
-                                            nn.GELU(),
-                                            nn.Linear(self.args.dim_feedforward, self.args.emb_dim*2))
-            self.last_layernorm = nn.LayerNorm(self.args.emb_dim*2, eps=1e-8)
+        
         elif self.args.decoder_model.lower() == 'fnete':
             ### initial layer norm
             self.attn_layernorms_ent = nn.ModuleList()
@@ -117,22 +102,22 @@ class MyCompGCN(nn.Module):
             ### attnetion layer
             self.attn_layers_real_imag = nn.ModuleList()
             for _ in range(self.args.nblocks):
-                layer_norm_ent = nn.LayerNorm(self.emb_dim*2, eps=1e-8)
-                layer_norm_rel = nn.LayerNorm(self.emb_dim*2, eps=1e-8)
+                layer_norm_ent = nn.LayerNorm(self.args.emb_dim * 2, eps=1e-8)
+                layer_norm_rel = nn.LayerNorm(self.args.emb_dim * 2, eps=1e-8)
                 self.attn_layernorms_ent.append(layer_norm_ent)
                 self.attn_layernorms_rel.append(layer_norm_rel)
                 attn_real_imag = FNetBlock(dropout=self.args.inp_drop)
                 self.attn_layers_real_imag.append(attn_real_imag)
-                sc_layernorm_real = nn.LayerNorm(self.emb_dim*2, eps=1e-8)
-                sc_layernorm_imag = nn.LayerNorm(self.emb_dim*2, eps=1e-8)
+                sc_layernorm_real = nn.LayerNorm(self.args.emb_dim * 2, eps=1e-8)
+                sc_layernorm_imag = nn.LayerNorm(self.args.emb_dim * 2, eps=1e-8)
                 self.sc_layernorms_real.append(sc_layernorm_real)
                 self.sc_layernorms_imag.append(sc_layernorm_imag)
         
             self.hid_drop = nn.Dropout(self.args.hid_drop)
-            self.ffn_output = nn.Sequential(nn.Linear(self.emb_dim*2, self.args.dim_feedforward),
+            self.ffn_output = nn.Sequential(nn.Linear(self.args.emb_dim * 2, self.args.dim_feedforward),
                                             nn.GELU(),
-                                            nn.Linear(self.args.dim_feedforward, self.emb_dim*2))
-            self.last_layernorms = nn.LayerNorm(self.emb_dim*2, eps=1e-8)
+                                            nn.Linear(self.args.dim_feedforward, self.args.emb_dim * 2))
+            self.last_layernorms = nn.LayerNorm(self.args.emb_dim * 2, eps=1e-8)
         else:
             raise ValueError("please choose decoder (DistMult/ConvE/DualAttnE)")
 

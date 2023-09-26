@@ -1,4 +1,4 @@
-DATA_DIR=../datasets
+DATA_DIR=../benchmark_datasets
 
 MODEL_NAME=RotatE
 DATASET_NAME=NELL-995

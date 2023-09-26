@@ -1,7 +1,7 @@
 DATA_DIR=../benchmark_datasets
 
 MODEL_NAME=ConvE
-DATASET_NAME=NELL-995
+DATASET_NAME=WN18RR
 DATA_PATH=$DATA_DIR/$DATASET_NAME
 LOSS=Cross_Entropy_Loss
 TRAIN_BS=1024
@@ -18,17 +18,18 @@ GPU=1
 
 CUDA_VISIBLE_DEVICES=$GPU python -u main.py \
     --model_name $MODEL_NAME \
+    --loss $LOSS \
     --dataset_name $DATASET_NAME \
     --data_path $DATA_PATH \
-    --loss $LOSS \
+    --max_epochs $MAX_EPOCHES \
+    --litmodel_name $LITMODEL_NAME \
+    --emb_dim $DIM \
     --train_bs $TRAIN_BS \
     --eval_bs $EVAL_BS \
-    --emb_dim $DIM \
     --lr $LEARNING_RATE \
-    --max_epochs $MAX_EPOCHES \
-    --regularization $REGULARIZATION \
     --num_workers $NUM_WORKERS \
     --check_per_epoch $CHECK_PER_EPOCH \
+    --regularization $REGULARIZATION \
     --litmodel_name $LITMODEL_NAME \
     --train_sampler_class $TRAIN_SAMPLER_CLASS \
     --use_wandb \

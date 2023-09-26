@@ -14,7 +14,7 @@ MARGIN=200
 LR=3e-6
 REGULARIZATION=1e-7
 CHECK_PER_EPOCH=500
-NUM_WORKERS=4
+NUM_WORKERS=16
 GPU=0
 
 CUDA_VISIBLE_DEVICES=$GPU python -u main.py \
@@ -36,4 +36,4 @@ CUDA_VISIBLE_DEVICES=$GPU python -u main.py \
     --num_workers $NUM_WORKERS \
     --use_wandb \
     --use_weight \
-    --save_config \
+    --save_config

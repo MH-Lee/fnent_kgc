@@ -19,8 +19,8 @@ checkpoint_callback: null
 checkpoint_dir: ''
 config_path: ''
 data_class: KGDataModule
-data_path: ../benchmark_datasets/FB15k-237
-dataset_name: FB15k-237
+data_path: ../benchmark_datasets/WN18RR
+dataset_name: WN18RR
 decoder_model: null
 default_root_dir: null
 detect_anomaly: false
@@ -30,7 +30,7 @@ dim_feedforward: 1024
 dis_order: 2
 dropout: 0.5
 early_stop_patience: 5
-emb_dim: 128
+emb_dim: 64
 emb_shape: 20
 enable_checkpointing: true
 enable_model_summary: true
@@ -62,7 +62,7 @@ log_every_n_steps: 50
 log_gpu_memory: null
 logger: true
 loss_name: Cross_Entropy_Loss
-lr: 0.0005
+lr: 0.005
 margin: 12.0
 max_entialments: 2000
 max_epochs: 2000
@@ -80,12 +80,12 @@ neg_weight: 50
 negative_adversarial_sampling: true
 norm_flag: false
 num_batches: 0
-num_ent: 14541
+num_ent: 40943
 num_layers: 2
 num_neg: 10
 num_nodes: 1
 num_processes: 1
-num_rel: 474
+num_rel: 22
 num_sanity_val_steps: 2
 num_workers: 4
 opn: corr
@@ -120,7 +120,7 @@ test_only: false
 test_sampler_class: TestSampler
 tpu_cores: null
 track_grad_norm: -1
-train_bs: 1024
+train_bs: 512
 train_sampler_class: ConvSampler
 update_axiom_per: 2
 use_wandb: true

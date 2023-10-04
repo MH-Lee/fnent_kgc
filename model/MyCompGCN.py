@@ -146,7 +146,7 @@ class MyCompGCN(nn.Module):
         if self.args.decoder_model.lower() == 'conve':
            score = self.ConvE(head_emb, rela_emb, x)
         elif self.args.decoder_model.lower() == 'distmult':
-           score = self.DistMult(head_emb, rela_emb)
+           score = self.DistMult(head_emb, rela_emb, x)
         elif self.args.decoder_model.lower() == 'dualattne':
            score = self.DualAttnE(head_emb, rela_emb, x)
         elif self.args.decoder_model.lower() == 'fnete':
@@ -185,7 +185,7 @@ class MyCompGCN(nn.Module):
             # score = ConvE.score_func(self, head_in_emb, rela_in_emb, x)
             score = self.ConvE(head_emb, rela_emb, x)
         elif self.args.decoder_model.lower() == 'distmult':
-            score = self.DistMult(head_emb, rela_emb)
+            score = self.DistMult(head_emb, rela_emb, x)
         elif self.args.decoder_model.lower() == 'dualattne':
             score = self.DualAttnE(head_emb, rela_emb, x)
         elif self.args.decoder_model.lower() == 'fnete':
@@ -194,10 +194,10 @@ class MyCompGCN(nn.Module):
             raise ValueError("please choose decoder (DistMult/ConvE/DualAttnE/FNetE)")
         return score
 
-    def DistMult(self, head_emb, rela_emb):
+    def DistMult(self, head_emb, rela_emb, all_ent):
         """Calculating the score of triples with DistMult model."""
         obj_emb = head_emb * rela_emb  # [batch_size, emb_dim]
-        x = torch.mm(obj_emb, self.emb_ent.weight.transpose(1, 0))  # [batch_size, ent_num]
+        x = torch.mm(obj_emb, all_ent.weight.transpose(1, 0))  # [batch_size, ent_num]
         x += self.bias.expand_as(x)
         score = torch.sigmoid(x)
         return score
@@ -276,7 +276,7 @@ class MyCompGCN(nn.Module):
         x = self.ffn_output(merged_out.squeeze())
         x = self.last_layernorms(x)
         x = self.hid_drop(x)
-        x = torch.mm(x, self.emb_ent.weight.transpose(1,0))
+        x = torch.mm(x, all_ent.transpose(1,0))
         x += self.b.expand_as(x)
         x = torch.sigmoid(x)
         return x

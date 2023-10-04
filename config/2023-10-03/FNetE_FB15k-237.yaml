@@ -30,7 +30,7 @@ dim_feedforward: 1024
 dis_order: 2
 dropout: 0.5
 early_stop_patience: 5
-emb_dim: 128
+emb_dim: 64
 emb_shape: 20
 enable_checkpointing: true
 enable_model_summary: true
@@ -62,7 +62,7 @@ log_every_n_steps: 50
 log_gpu_memory: null
 logger: true
 loss_name: Cross_Entropy_Loss
-lr: 0.0005
+lr: 0.001
 margin: 12.0
 max_entialments: 2000
 max_epochs: 2000

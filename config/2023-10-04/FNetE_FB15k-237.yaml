@@ -13,7 +13,7 @@ calc_hits:
 - 1
 - 3
 - 10
-check_per_epoch: 100
+check_per_epoch: 200
 check_val_every_n_epoch: 1
 checkpoint_callback: null
 checkpoint_dir: ''
@@ -62,10 +62,10 @@ log_every_n_steps: 50
 log_gpu_memory: null
 logger: true
 loss_name: Cross_Entropy_Loss
-lr: 0.0005
+lr: 0.001
 margin: 12.0
 max_entialments: 2000
-max_epochs: 2000
+max_epochs: 3000
 max_steps: -1
 max_time: null
 min_epochs: null

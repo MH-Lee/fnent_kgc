@@ -27,9 +27,6 @@ def main():
     elif 'FNetE' in args.model_name:
         model = import_class(f"model.{args.model_name}")(args)
         lit_model = import_class(f"lit_model.{args.litmodel_name}")(model, args)
-    # elif args.model_name == 'FNetE' or args.model_name == 'FNetE2':
-    #     model = import_class(f"model.{args.model_name}")(args)
-    #     lit_model = import_class(f"lit_model.{args.litmodel_name}")(model, args)
     elif args.model_name == 'MyCompGCN':
         model = import_class(f"model.{args.model_name}")(args)
         lit_model = import_class(f"lit_model.{args.litmodel_name}")(model, args)

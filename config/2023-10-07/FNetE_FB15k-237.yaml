@@ -46,7 +46,7 @@ freq_init: 4
 gpu: cuda:0
 gpus: null
 gradient_clip_algorithm: null
-gradient_clip_val: null
+gradient_clip_val: 5.0
 hid_drop: 0.3
 hid_size: 9728
 inject_triple_percent: 1.0
@@ -87,7 +87,7 @@ num_nodes: 1
 num_processes: 1
 num_rel: 474
 num_sanity_val_steps: 2
-num_workers: 4
+num_workers: 8
 opn: corr
 optim_name: Adam
 out_dim: 200
@@ -100,7 +100,7 @@ prepare_data_per_node: null
 process_position: 0
 profiler: null
 progress_bar_refresh_rate: null
-regularization: 0.9
+regularization: 1.0e-07
 regularization_two: 0
 reload_dataloaders_every_epoch: false
 reload_dataloaders_every_n_epochs: 0

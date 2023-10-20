@@ -91,7 +91,6 @@ class FNetE(Model):
         Returns:
             score: Final score of the embedding.
         """
-        # import pdb;pdb.set_trace()
         for layer in range(self.args.nblocks):
             Q_ent = self.attn_layernorms_ent[layer](head_emb)
             Q_rel = self.attn_layernorms_rel[layer](relation_emb)
@@ -101,13 +100,20 @@ class FNetE(Model):
             imag_attn_out = self.sc_layernorms_imag[layer](imag_attn_out + concat_emb) # [B, 2, emb_dim]
             real_attn_ent, real_attn_rel = torch.chunk(real_attn_out, 2, dim=1) # [B, 1, emb_dim]
             imag_attn_ent, imag_attn_rel = torch.chunk(imag_attn_out, 2, dim=1) # [B, 1, emb_dim]
-            if layer <= (self.args.nblocks - 1):
+            if layer < (self.args.nblocks - 1):
                 # head_emb, relation_emb = torch.chunk(merged_out, 2, dim=-1)
-                head_emb = torch.fft.irfft(torch.complex(real_attn_ent, imag_attn_ent), real_attn_ent.shape[-1]) # [B, 1, emb_dim]
-                relation_emb = torch.fft.irfft(torch.complex(real_attn_rel, imag_attn_rel), real_attn_ent.shape[-1]) # [B, 1, emb_dim]
+                head_emb = torch.fft.irfft(torch.complex(real_attn_ent, imag_attn_ent), real_attn_ent.shape[-1])      # [B, 1, emb_dim]
+                relation_emb = torch.fft.irfft(torch.complex(real_attn_rel, imag_attn_rel), real_attn_rel.shape[-1]) # [B, 1, emb_dim]
 
-        re_score = real_attn_ent * real_attn_rel - imag_attn_ent * imag_attn_rel # [B, 1, emb_dim]
-        im_score = real_attn_ent * imag_attn_rel + imag_attn_ent * real_attn_rel # [B, 1, emb_dim]
+        if self.args.fnete_opn == "mult": # (a+bi)(c+di) = (ac-bd) + (ad+bc)i
+            re_score = real_attn_ent * real_attn_rel - imag_attn_ent * imag_attn_rel # [B, 1, emb_dim]
+            im_score = real_attn_ent * imag_attn_rel + imag_attn_ent * real_attn_rel # [B, 1, emb_dim]
+        elif self.args.fnete_opn == "add": # (a+bi) + (c+di) = (a+c) + (b+d)i
+            re_score = real_attn_ent + real_attn_rel # [B, 1, emb_dim]
+            im_score = imag_attn_ent + imag_attn_rel # [B, 1, emb_dim]
+        else:
+            raise NotImplementedError("Unknown fnete_opn: {}".format(self.args.fnete_opn))
+        
         merged_out = torch.complex(re_score, im_score)
         merged_out = torch.fft.irfft(merged_out, re_score.shape[-1])
         # import pdb;pdb.set_trace()

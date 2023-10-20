@@ -5,3 +5,4 @@ wandb/
 .ipynb_checkpoints/
 new_logs/
 benchmark_log/
+config/

@@ -6,15 +6,20 @@ from inspect import stack
 
 
 class FNetBlock(nn.Module):
-  def __init__(self, dropout=0.1):
+  def __init__(self, emb_dim, dropout=0.1):
     super().__init__()
+    d_ff = emb_dim * 4
     self.dropout = nn.Dropout(dropout)
+    self.conv1 = nn.Conv1d(in_channels=emb_dim, out_channels=d_ff, kernel_size=1)
+    self.conv2 = nn.Conv1d(in_channels=d_ff, out_channels=emb_dim, kernel_size=1)
+    self.activation = nn.GELU()
 
   def forward(self, x):
-    re_x = torch.fft.fft(torch.fft.fft(x, dim=-1), dim=-2).real
-    img_x = torch.fft.fft(torch.fft.fft(x, dim=-1), dim=-2).imag
-    re_x = self.dropout(re_x)
-    imag_x = self.dropout(img_x)
+    x = self.dropout(self.activation(self.conv1(x.transpose(-1,1))))
+    re_x = torch.fft.fft(torch.fft.fft(x, dim=-2), dim=-1).real
+    img_x = torch.fft.fft(torch.fft.fft(x, dim=-2), dim=-1).imag
+    re_x = self.dropout(self.conv2(re_x).transpose(-1,1))
+    imag_x = self.dropout(self.conv2(img_x).transpose(-1,1))
     return re_x, imag_x
 
 class FNetE3(Model):
@@ -59,7 +64,7 @@ class FNetE3(Model):
             layer_norm_rel = nn.LayerNorm(self.emb_dim, eps=1e-8)
             self.attn_layernorms_ent.append(layer_norm_ent)
             self.attn_layernorms_rel.append(layer_norm_rel)
-            attn_real_imag = FNetBlock(dropout=self.args.inp_drop)
+            attn_real_imag = FNetBlock(emb_dim=self.emb_dim, dropout=self.args.inp_drop)
             self.attn_layers_real_imag.append(attn_real_imag)
             sc_layernorm_real = nn.LayerNorm(self.emb_dim, eps=1e-8)
             sc_layernorm_imag = nn.LayerNorm(self.emb_dim, eps=1e-8)
@@ -67,9 +72,9 @@ class FNetE3(Model):
             self.sc_layernorms_imag.append(sc_layernorm_imag)
         
         self.hid_drop = nn.Dropout(self.args.hid_drop)
-        # self.ffn_output = nn.Sequential(nn.Linear(self.emb_dim, self.args.dim_feedforward),
-        #                                 nn.GELU(),
-        #                                 nn.Linear(self.args.dim_feedforward, self.emb_dim))
+        self.ffn_output = nn.Sequential(nn.Linear(self.emb_dim, self.args.dim_feedforward),
+                                        nn.GELU(),
+                                        nn.Linear(self.args.dim_feedforward, self.emb_dim))
         self.last_layernorms = nn.LayerNorm(self.emb_dim, eps=1e-8)
 
 
@@ -102,7 +107,6 @@ class FNetE3(Model):
             real_attn_ent, real_attn_rel = torch.chunk(real_attn_out, 2, dim=1) # [B, 1, emb_dim]
             imag_attn_ent, imag_attn_rel = torch.chunk(imag_attn_out, 2, dim=1) # [B, 1, emb_dim]
             if layer <= (self.args.nblocks - 1):
-                # head_emb, relation_emb = torch.chunk(merged_out, 2, dim=-1)
                 head_emb = torch.fft.irfft(torch.complex(real_attn_ent, imag_attn_ent), real_attn_ent.shape[-1]) # [B, 1, emb_dim]
                 relation_emb = torch.fft.irfft(torch.complex(real_attn_rel, imag_attn_rel), real_attn_ent.shape[-1]) # [B, 1, emb_dim]
 
@@ -111,11 +115,9 @@ class FNetE3(Model):
         merged_out = torch.complex(re_score, im_score)
         merged_out = torch.fft.irfft(merged_out, re_score.shape[-1])
         # import pdb;pdb.set_trace()
-        x = self.hid_drop(merged_out.squeeze())
-        # x = self.ffn_output(x)
-        # x = self.ffn_output(merged_out.squeeze())
+        x = self.ffn_output(merged_out.squeeze())
         x = self.last_layernorms(x)
-        # x = self.hid_drop(x)
+        x = self.hid_drop(x)
         x = torch.mm(x, self.emb_ent.weight.transpose(1,0)) if choose_emb == None else torch.mm(x, choose_emb.transpose(1, 0)) 
         x += self.b.expand_as(x)
         x = torch.sigmoid(x)

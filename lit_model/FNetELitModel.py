@@ -7,10 +7,10 @@ import numpy as np
 import os
 import json
 from collections import defaultdict as ddict
-from IPython import embed
 from neuralkg.lit_model.BaseLitModel import BaseLitModel
 from neuralkg.eval_task import *
 from IPython import embed
+from .utils import CosineAnnealingWarmUpRestarts
 
 from functools import partial
 
@@ -63,10 +63,15 @@ class FNetELitModel(BaseLitModel):
     
     '''lr_scheduler'''
     def configure_optimizers(self):
-        # milestones = int(self.args.max_epochs / 2)
-        milestones = [int(i*self.args.max_epochs) for i in [0.5, 0.75, 0.9]]
-        optimizer = self.optimizer_class(self.model.parameters(), lr=self.args.lr, weight_decay=self.args.regularization)
-        # StepLR = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[milestones], gamma=0.5)
-        StepLR = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=milestones, gamma=0.5)
-        optim_dict = {'optimizer': optimizer, 'lr_scheduler': StepLR}
+        milestones = int(self.args.max_epochs // 10)
+        optimizer = self.optimizer_class(self.model.parameters(), lr=self.args.lr, weight_decay=0.0)
+        CosineAnnealingLR = CosineAnnealingWarmUpRestarts(optimizer, T_0=milestones, T_mult=2, eta_max=self.args.lr, T_up=5, gamma=0.8)
+        optim_dict = {'optimizer': optimizer, 'lr_scheduler': CosineAnnealingLR}
         return optim_dict
+
+    # def configure_optimizers(self):
+    #     milestones = int(self.args.max_epochs / 2)
+    #     optimizer = self.optimizer_class(self.model.parameters(), lr=self.args.lr, weight_decay=0)
+    #     StepLR = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[milestones], gamma=0.5)
+    #     optim_dict = {'optimizer': optimizer, 'lr_scheduler': StepLR}
+    #     return optim_dict

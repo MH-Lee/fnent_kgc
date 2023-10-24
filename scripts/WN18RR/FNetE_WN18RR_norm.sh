@@ -1,18 +1,23 @@
 DATA_DIR=../benchmark_datasets
 
-MODEL_NAME=ConvE
-DATASET_NAME=YAGO3-10
+MODEL_NAME=FNetE
+DATASET_NAME=WN18RR
 DATA_PATH=$DATA_DIR/$DATASET_NAME
 LOSS=Cross_Entropy_Loss
 TRAIN_BS=1024
 EVAL_BS=256
-DIM=200
-LEARNING_RATE=0.001
-MAX_EPOCHES=3000
+DIM=128
+DIM_FEEDFORWARD=1024
+LEARNING_RATE=0.005
+MAX_EPOCHES=4000
+NUM_BLOCKS=1
+NUM_WORKERS=8
+INIT_DROP=0.2
+HIDDEN_DROP=0.3
+FNETE_OPN=norm
 REGULARIZATION=0
-NUM_WORKERS=4
-CHECK_PER_EPOCH=30
-LITMODEL_NAME=ConvELitModel
+CHECK_PER_EPOCH=200
+LITMODEL_NAME=FNetELitModel
 TRAIN_SAMPLER_CLASS=ConvSampler
 GPU=1
 
@@ -25,11 +30,19 @@ CUDA_VISIBLE_DEVICES=$GPU python -u main.py \
     --eval_bs $EVAL_BS \
     --emb_dim $DIM \
     --lr $LEARNING_RATE \
-    --max_epochs $MAX_EPOCHES \
+    --inp_drop $INIT_DROP \
+    --hid_dro $HIDDEN_DROP \
+    --fnete_opn $FNETE_OPN \
     --regularization $REGULARIZATION \
+    --max_epochs $MAX_EPOCHES \
     --num_workers $NUM_WORKERS \
     --check_per_epoch $CHECK_PER_EPOCH \
     --litmodel_name $LITMODEL_NAME \
+    --nblocks $NUM_BLOCKS \
+    --dim_feedforward $DIM_FEEDFORWARD \
     --train_sampler_class $TRAIN_SAMPLER_CLASS \
     --use_wandb \
     --save_config
+
+# GRADIENT_CLIP=3.0
+# --gradient_clip_val $GRADIENT_CLIP \

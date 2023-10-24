@@ -1,20 +1,23 @@
 DATA_DIR=../benchmark_datasets
 
-MODEL_NAME=ConvE
-DATASET_NAME=YAGO3-10
+MODEL_NAME=FNetE4
+DATASET_NAME=FB15k-237
 DATA_PATH=$DATA_DIR/$DATASET_NAME
 LOSS=Cross_Entropy_Loss
 TRAIN_BS=1024
 EVAL_BS=256
 DIM=200
-LEARNING_RATE=0.001
+DIM_FEEDFORWARD=1024
+LEARNING_RATE=0.0005
 MAX_EPOCHES=3000
 REGULARIZATION=0
 NUM_WORKERS=4
-CHECK_PER_EPOCH=30
-LITMODEL_NAME=ConvELitModel
+NUM_BLOCKS=2
+CHECK_PER_EPOCH=150
+FNETE_OPN=tucker
+LITMODEL_NAME=FNetELitModel
 TRAIN_SAMPLER_CLASS=ConvSampler
-GPU=1
+GPU=0
 
 CUDA_VISIBLE_DEVICES=$GPU python -u main.py \
     --model_name $MODEL_NAME \
@@ -27,9 +30,12 @@ CUDA_VISIBLE_DEVICES=$GPU python -u main.py \
     --lr $LEARNING_RATE \
     --max_epochs $MAX_EPOCHES \
     --regularization $REGULARIZATION \
+    --fnete_opn $FNETE_OPN \
     --num_workers $NUM_WORKERS \
     --check_per_epoch $CHECK_PER_EPOCH \
     --litmodel_name $LITMODEL_NAME \
+    --nblocks $NUM_BLOCKS \
+    --dim_feedforward $DIM_FEEDFORWARD \
     --train_sampler_class $TRAIN_SAMPLER_CLASS \
     --use_wandb \
     --save_config

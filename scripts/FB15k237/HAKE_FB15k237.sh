@@ -1,21 +1,24 @@
 DATA_DIR=../benchmark_datasets
 
-MODEL_NAME=RotatE
-DATASET_NAME=YAGO3-10
+MODEL_NAME=HAKE
+DATASET_NAME=FB15k-237
 DATA_PATH=$DATA_DIR/$DATASET_NAME
 LITMODEL_NAME=KGELitModel
-MAX_EPOCHS=5000
-EMB_DIM=500
+MAX_EPOCHS=1000
+EMB_DIM=200
 LOSS=Adv_Loss
 ADV_TEMP=1.0
-TRAIN_BS=256
+TRAIN_BS=512
 EVAL_BS=16
-NUM_NEG=400
-MARGIN=24.0
-LR=2e-4
-CHECK_PER_EPOCH=50
-NUM_WORKERS=8
+NUM_NEG=256
+MARGIN=9.0
+LR=5e-5
+CHECK_PER_EPOCH=30
+PHASE_WEIGHT=1.0
+MODULUS_WEIGHT=3.5
+NUM_WORKERS=4
 GPU=1
+
 
 CUDA_VISIBLE_DEVICES=$GPU python -u main.py \
     --model_name $MODEL_NAME \
@@ -32,6 +35,9 @@ CUDA_VISIBLE_DEVICES=$GPU python -u main.py \
     --margin $MARGIN \
     --lr $LR \
     --check_per_epoch $CHECK_PER_EPOCH \
+    --phase_weight $PHASE_WEIGHT \
+    --modulus_weight $MODULUS_WEIGHT \
     --num_workers $NUM_WORKERS \
+    --use_weight \
     --use_wandb \
     --save_config

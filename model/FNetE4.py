@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from neuralkg.model.KGEModel.model import Model
 from inspect import stack
+import numpy as np
 
 
 class FNetBlock(nn.Module):
@@ -17,9 +18,9 @@ class FNetBlock(nn.Module):
     imag_x = self.dropout(img_x)
     return re_x, imag_x
 
-class FNetE(Model):
+class FNetE4(Model):
     def __init__(self, args):
-        super(FNetE, self).__init__(args)
+        super(FNetE4, self).__init__(args)
         self.args = args      
         self.emb_ent = None
         self.emb_rel = None
@@ -71,7 +72,11 @@ class FNetE(Model):
                                         nn.GELU(),
                                         nn.Linear(self.args.dim_feedforward, self.emb_dim))
         self.last_layernorms = nn.LayerNorm(self.emb_dim, eps=1e-8)
-
+        if self.args.fnete_opn == "tucker":
+            self.W_td_Re = nn.Parameter(torch.tensor(np.random.uniform(-1, 1, (self.emb_dim, self.emb_dim, self.emb_dim)), dtype=torch.float32), requires_grad=True)
+            self.W_td_img = nn.Parameter(torch.tensor(np.random.uniform(-1, 1, (self.emb_dim, self.emb_dim, self.emb_dim)), dtype=torch.float32), requires_grad=True)
+            self.hid_drop_tucker = nn.Dropout(self.args.hid_drop)
+            self.tucker_layernorms = nn.LayerNorm(self.emb_dim, eps=1e-8)
 
     def score_func(self, head_emb, relation_emb, choose_emb = None):
 
@@ -102,8 +107,8 @@ class FNetE(Model):
             imag_attn_ent, imag_attn_rel = torch.chunk(imag_attn_out, 2, dim=1) # [B, 1, emb_dim]
             if layer < (self.args.nblocks - 1):
                 # head_emb, relation_emb = torch.chunk(merged_out, 2, dim=-1)
-                head_emb = torch.fft.ifft(torch.complex(real_attn_ent, imag_attn_ent)).real # [B, 1, emb_dim]
-                relation_emb = torch.fft.ifft(torch.complex(real_attn_rel, imag_attn_rel)).real # [B, 1, emb_dim]
+                head_emb = torch.fft.irfft(torch.complex(real_attn_ent, imag_attn_ent), real_attn_ent.shape[-1])      # [B, 1, emb_dim]
+                relation_emb = torch.fft.irfft(torch.complex(real_attn_rel, imag_attn_rel), real_attn_rel.shape[-1]) # [B, 1, emb_dim]
 
         if self.args.fnete_opn == "mult": # (a+bi)(c+di) = (ac-bd) + (ad+bc)i
             re_score = real_attn_ent * real_attn_rel - imag_attn_ent * imag_attn_rel # [B, 1, emb_dim]
@@ -111,13 +116,21 @@ class FNetE(Model):
         elif self.args.fnete_opn == "add": # (a+bi) + (c+di) = (a+c) + (b+d)i
             re_score = real_attn_ent + real_attn_rel # [B, 1, emb_dim]
             im_score = imag_attn_ent + imag_attn_rel # [B, 1, emb_dim]
+        elif self.args.fnete_opn == "tucker":
+            W_mat_Re = torch.mm(real_attn_rel.squeeze(), self.W_td_Re.view(self.emb_dim, -1)).view(-1, self.emb_dim, self.emb_dim)
+            W_mat_img = torch.mm(imag_attn_rel.squeeze(), self.W_td_img.view(self.emb_dim, -1)).view(-1, self.emb_dim, self.emb_dim)
+            W_mat_Re = self.hid_drop(W_mat_Re)
+            W_mat_img = self.hid_drop(W_mat_img)
+            re_score = torch.bmm(real_attn_ent, W_mat_Re) # [B, 1, emb_dim]
+            im_score = torch.bmm(imag_attn_ent, W_mat_Re) # [B, 1, emb_dim]
         else:
             raise NotImplementedError("Unknown fnete_opn: {}".format(self.args.fnete_opn))
         
         merged_out = torch.complex(re_score, im_score)
-        merged_out = torch.fft.ifft(merged_out).real
+        merged_out = torch.fft.irfft(merged_out, re_score.shape[-1])
         # import pdb;pdb.set_trace()
-        x = self.ffn_output(merged_out.squeeze())
+        x = self.tucker_layernorms(merged_out.squeeze())
+        x = self.ffn_output(x)
         x = self.last_layernorms(x)
         x = self.hid_drop(x)
         x = torch.mm(x, self.emb_ent.weight.transpose(1,0)) if choose_emb == None else torch.mm(x, choose_emb.transpose(1, 0)) 

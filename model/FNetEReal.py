@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from neuralkg.model.KGEModel.model import Model
 from inspect import stack
+import numpy as np
 
 
 class FNetBlock(nn.Module):
@@ -71,6 +72,9 @@ class FNetEReal(Model):
                                         nn.Linear(self.args.dim_feedforward, self.emb_dim),
                                         nn.Dropout(self.args.hid_drop))
         self.last_layernorms = nn.LayerNorm(self.emb_dim, eps=1e-8)
+        if self.args.fnete_opn == "tucker":
+            self.W_td_Re = nn.Parameter(torch.tensor(np.random.uniform(-1, 1, (self.emb_dim, self.emb_dim, self.emb_dim)), dtype=torch.float32), requires_grad=True)
+
 
 
     def score_func(self, head_emb, relation_emb, choose_emb = None):

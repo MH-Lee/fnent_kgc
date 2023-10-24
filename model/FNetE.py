@@ -65,9 +65,12 @@ class FNetE(Model):
             sc_layernorm_imag = nn.LayerNorm(self.emb_dim, eps=1e-8)
             self.sc_layernorms_real.append(sc_layernorm_real)
             self.sc_layernorms_imag.append(sc_layernorm_imag)
-        
+        if self.args.fnete_opn == "concat":
+            ffn_input_dim = self.emb_dim * 2
+        else:
+            ffn_input_dim = self.emb_dim
         self.hid_drop = nn.Dropout(self.args.hid_drop)
-        self.ffn_output = nn.Sequential(nn.Linear(self.emb_dim, self.args.dim_feedforward),
+        self.ffn_output = nn.Sequential(nn.Linear(ffn_input_dim, self.args.dim_feedforward),
                                         nn.GELU(),
                                         nn.Linear(self.args.dim_feedforward, self.emb_dim))
         self.last_layernorms = nn.LayerNorm(self.emb_dim, eps=1e-8)
@@ -111,6 +114,12 @@ class FNetE(Model):
         elif self.args.fnete_opn == "add": # (a+bi) + (c+di) = (a+c) + (b+d)i
             re_score = real_attn_ent + real_attn_rel # [B, 1, emb_dim]
             im_score = imag_attn_ent + imag_attn_rel # [B, 1, emb_dim]
+        elif self.args.fnete_opn == "concat":
+            re_score = torch.concat([real_attn_ent, real_attn_rel], dim = -1)
+            im_score = torch.concat([imag_attn_ent, imag_attn_rel], dim = -1)
+        elif self.args.fnete_opn == "norm":
+            re_score = torch.stack([real_attn_ent, real_attn_rel], dim = 0).norm(dim = 0)
+            im_score = torch.stack([imag_attn_ent, imag_attn_rel], dim = 0).norm(dim = 0)
         else:
             raise NotImplementedError("Unknown fnete_opn: {}".format(self.args.fnete_opn))
         
